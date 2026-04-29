@@ -14,7 +14,7 @@ from django.db import models
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api_yamdb.settings')
 django.setup()
 
-from titles.models import (
+from reviews.models import (
     Category,
     Genre,
     Title,

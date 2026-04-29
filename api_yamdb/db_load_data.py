@@ -1,41 +1,43 @@
 '''Заливка данных из .csv в папке static/data в БД.
 
-Это стоило мне всех нервов!
+Для работы нужно правильно заполнить MODEL_FILE_MATCH:
+
+    Схема заполнения
+    (Имя django приложения модели, Название заполняемой модели, Имя .csv файла с данными)
+
+    Путь хранения .csv файлов для наполнения БД:
+        static/data/...
+
+Запускать лучше из директории /api_yamdb
+
+Это стоило мне половины всех нервов! (дважды)
 '''
 
 import csv
-import sqlite3
 import os
+from pathlib import Path
+import sqlite3
 
 import django
-from django.contrib.auth import get_user_model
+from django.apps import apps
 from django.db import models
+
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api_yamdb.settings')
 django.setup()
 
-from reviews.models import (
-    Category,
-    Genre,
-    Title,
-    GenreTitle,
-    Review,
-    Comment
-)
+BASE_DIR = Path(__file__).resolve().parent
+DATA_PATH = BASE_DIR / 'static/data/'
 
-User = get_user_model()
-
-
-DATA_PATH = 'static/data/'
 MODEL_FILE_MATCH = (
-    # (Model, file)
-    (Category, 'category.csv'),
-    (Comment, 'comments.csv'),
-    (GenreTitle, 'genre_title.csv'),
-    (Genre, 'genre.csv'),
-    (Review, 'review.csv'),
-    (Title, 'titles.csv'),
-    (User, 'users.csv'),
+    # (App, Model, file)
+    ('reviews', 'Category', 'category.csv'),
+    ('reviews', 'Comment', 'comments.csv'),
+    ('reviews', 'GenreTitle', 'genre_title.csv'),
+    ('reviews', 'Genre', 'genre.csv'),
+    ('reviews', 'Review', 'review.csv'),
+    ('reviews', 'Title', 'titles.csv'),
+    ('accounts', 'CustomUser', 'users.csv'),
 )
 
 
@@ -55,10 +57,13 @@ connection = sqlite3.connect('db.sqlite3')
 cursor = connection.cursor()
 
 # Перебираем все таблицы и соответствующие csv файлы
-for model, file_name in MODEL_FILE_MATCH:
+for app, model_name, file_name in MODEL_FILE_MATCH:
+
+    # Получаем модель
+    model = apps.get_model(app_label=app, model_name=model_name)
 
     # Для каждой таблицы используем своё контекстное окно
-    with open(DATA_PATH + file_name, 'r', encoding='utf-8') as file:
+    with open(DATA_PATH / file_name, 'r', encoding='utf-8') as file:
         content = csv.reader(file)
         # первая строка csv. Содержит заголовок
         csv_header = next(content)
@@ -67,20 +72,11 @@ for model, file_name in MODEL_FILE_MATCH:
         # Получаем кортеж полей, куда заинсертятся данные. get(column, column) - вымер
         inserted_fields = [table_fields.get(column, column) for column in csv_header]
 
-        # Я ща помру.
-        if model == User:
-            pass
-            # insert_command = f'''
-            #     INSERT INTO {model._meta.db_table} ({', '.join(inserted_fields + ['password'])})
-            #     VALUES({', '.join(['?'] * (len(inserted_fields) + 1))})
-            # '''.replace('    ', '')
-            # cursor.executemany(insert_command, (data + ['qwerty123'] for data in content))
-        else:
-            insert_command = f'''
-                INSERT INTO {model._meta.db_table} ({', '.join(inserted_fields)})
-                VALUES({', '.join(['?'] * len(inserted_fields))})
-            '''.replace('    ', '')
-            cursor.executemany(insert_command, content)
+        insert_command = f'''
+            INSERT INTO {model._meta.db_table} ({', '.join(inserted_fields)})
+            VALUES({', '.join(['?'] * len(inserted_fields))})
+        '''.replace('    ', '')
+        cursor.executemany(insert_command, content)
 
 
 # Коммит выполняем только если всё залилось и программа не упала с ошибкой.

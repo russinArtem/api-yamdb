@@ -17,3 +17,11 @@ class CustomUser(AbstractUser):
 
     role = models.CharField(default='U', choices=ROLES, max_length=16)
     bio = models.TextField(blank=True, null=True)
+
+    # Неиспользуемые поля родительской модели
+    password = None  # ...
+    is_superuser = None
+    is_staff = None
+    last_login = None
+    is_active = None
+    date_joined = None

@@ -2,7 +2,14 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from .views import (
-    CategoryViewSet, CommentViewSet, GenreViewSet, ReviewViewSet, TitleViewSet)
+    CategoryViewSet,
+    CommentViewSet,
+    GenreViewSet,
+    ReviewViewSet,
+    TitleViewSet,
+    UsersAdminViewSet,
+    UserMeView,
+)
 
 v1_router = DefaultRouter()
 v1_router.register(r'categories', CategoryViewSet, basename='categories')
@@ -18,8 +25,10 @@ v1_router.register(
     CommentViewSet,
     basename='comments'
 )
+v1_router.register(r'users', UsersAdminViewSet, basename='users')
 
 urlpatterns = [
+    path('v1/users/me/', UserMeView.as_view()),
     path('v1/', include(v1_router.urls)),
-    path('v1/', include('djoser.urls.jwt')),
+    path('v1/auth/', include('accounts.urls')),
 ]

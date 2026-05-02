@@ -3,7 +3,7 @@
 Для работы нужно правильно заполнить MODEL_FILE_MATCH:
 
     Схема заполнения
-    (Имя django приложения модели, Название заполняемой модели, Имя .csv файла с данными)
+    (Имя django приложения модели, Название модели, Имя .csv файла с данными)
 
     Путь хранения .csv файлов для наполнения БД:
         static/data/...
@@ -69,8 +69,12 @@ for app, model_name, file_name in MODEL_FILE_MATCH:
         csv_header = next(content)
 
         table_fields = model_db_fields(model)
-        # Получаем кортеж полей, куда заинсертятся данные. get(column, column) - вымер
-        inserted_fields = [table_fields.get(column, column) for column in csv_header]
+        # Получаем кортеж полей, куда заинсертятся данные.
+        inserted_fields = [
+            # get(column, column) - вымер.
+            table_fields.get(column, column)
+            for column in csv_header
+        ]
 
         insert_command = f'''
             INSERT INTO {model._meta.db_table} ({', '.join(inserted_fields)})

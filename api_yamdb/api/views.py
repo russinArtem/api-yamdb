@@ -138,7 +138,7 @@ class TitleViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_serializer_class(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ('list', 'retrieve'):
             return TitleReadSerializer
         return TitleWriteSerializer
 
@@ -189,10 +189,10 @@ class CommentViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'post', 'patch', 'delete',)
 
     serializer_class = CommentSerializer
-    permission_classes = [
+    permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
         IsAuthorOrModeratorOrAdmin
-    ]
+    )
 
     def _get_review(self):
         return get_object_or_404(Review, id=self.kwargs['review_id'])

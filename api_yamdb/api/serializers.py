@@ -55,18 +55,19 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(
         slug_field='slug',
         queryset=Genre.objects.all(),
-        many=True
+        many=True,
+        allow_empty=False
     )
 
     class Meta:
         model = Title
         fields = ('id', 'name', 'year', 'description', 'category', 'genre')
 
-    def validate_year(self, value):
+    def validate_year(self, year):
         current_year = datetime.now().year
-        if value > current_year:
+        if year > current_year:
             raise serializers.ValidationError('Год не может быть в будущем')
-        return value
+        return year
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -74,12 +75,11 @@ class ReviewSerializer(serializers.ModelSerializer):
         slug_field='username',
         read_only=True
     )
-    title = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Review
         fields = '__all__'
-        read_only_fields = ('pub_date',)
+        read_only_fields = ('title', 'pub_date',)
 
 
 class CommentSerializer(serializers.ModelSerializer):

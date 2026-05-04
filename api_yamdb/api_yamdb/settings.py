@@ -11,13 +11,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-secret-key-123')
 
-# DEBUG = os.getenv('DEBUG') == 'True'
-DEBUG = True
+DEBUG = os.getenv('DEBUG') == 'True'
 
 ALLOWED_HOSTS = ['*']
+DOMAIN_NAME = 'yandex.ru'
 
 # Custom User Model
-AUTH_USER_MODEL = 'accounts.CustomUser'
+AUTH_USER_MODEL = 'accounts.Account'
 
 # Application definition
 INSTALLED_APPS = [
@@ -106,6 +106,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+DEFAULT_FROM_EMAIL = f'SgtPepeF@{DOMAIN_NAME}'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [

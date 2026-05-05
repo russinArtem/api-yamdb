@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
@@ -37,7 +35,7 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleReadSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(read_only=True, many=True)
-    rating = serializers.IntegerField(read_only=True)
+    rating = serializers.ReadOnlyField()
 
     class Meta:
         model = Title
@@ -63,12 +61,6 @@ class TitleWriteSerializer(serializers.ModelSerializer):
         model = Title
         fields = ('id', 'name', 'year', 'description', 'category', 'genre')
 
-    def validate_year(self, year):
-        current_year = datetime.now().year
-        if year > current_year:
-            raise serializers.ValidationError('Год не может быть в будущем')
-        return year
-
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
@@ -81,6 +73,20 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('title', 'pub_date',)
 
+    def validate(self, validated_data):
+        title = self.context.get('title')
+        if not title:
+            raise serializers.ValidationError({
+                'detail': 'Не удалось определить тайтл. Проверьте URL.'
+            })
+        if self.instance is None:
+            if title.reviews.filter(author=self.context['request'].user
+                                    ).exists():
+                raise serializers.ValidationError({
+                    'detail': 'Вы уже оставили отзыв на это произведение'
+                })
+        return validated_data
+
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
@@ -90,5 +96,5 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = '__all__'
-        read_only_fields = ('pub_date', 'review')
+        fields = ('id', 'text', 'author', 'pub_date')
+        read_only_fields = ('pub_date',)

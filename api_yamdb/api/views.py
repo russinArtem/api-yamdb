@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Avg
+from django.http import Http404
 from django.shortcuts import get_object_or_404
-from rest_framework import filters, permissions, serializers, status, viewsets
+from rest_framework import filters, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.mixins import (
@@ -122,7 +124,8 @@ class TitleViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Title.objects.select_related('category').prefetch_related(
-            'genre')
+            'genre'
+        ).annotate(rating=Avg('reviews__score'))
         year = self.request.query_params.get('year')
         category_slug = self.request.query_params.get('category')
         genre_slug = self.request.query_params.get('genre')
@@ -138,7 +141,7 @@ class TitleViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_serializer_class(self):
-        if self.action in ('list', 'retrieve'):
+        if self.action in {'list', 'retrieve'}:
             return TitleReadSerializer
         return TitleWriteSerializer
 
@@ -146,42 +149,33 @@ class TitleViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
 
     http_method_names = ('get', 'post', 'patch', 'delete',)
-
     serializer_class = ReviewSerializer
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
         IsAuthorOrModeratorOrAdmin
     )
 
+    def _get_title(self):
+        title_id = self.kwargs.get('title_id')
+        if title_id is None:
+            raise Http404("Параметр title_id не передан")
+        return get_object_or_404(Title, id=title_id)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['title'] = self._get_title()
+        return context
+
     def get_queryset(self):
-        title = get_object_or_404(Title, id=self.kwargs['title_id'])
+        title = self._get_title()
         return Review.objects.filter(title=title)
 
     def create(self, request, *args, **kwargs):
-        try:
-            return super().create(request, *args, **kwargs)
-        except serializers.ValidationError as e:
-            # Все ValidationError возвращаем с 400
-            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
+        return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        title_id = self.kwargs['title_id']
-        # Уже проверено в get_queryset, но дублируем для надёжности
-        title = get_object_or_404(Title, id=title_id)
-
-        # Проверка на дубликат отзыва
-        if Review.objects.filter(
-            author=self.request.user,
-            title=title
-        ).exists():
-            raise serializers.ValidationError({
-                'detail': 'Вы уже оставили отзыв на это произведение'
-            })
-
-        # Сохраняем отзыв
-        review = serializer.save(author=self.request.user, title=title)
-        # Обновляем рейтинг тайтла
-        review.title.update_rating()
+        title = self._get_title()
+        serializer.save(author=self.request.user, title=title)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -195,7 +189,17 @@ class CommentViewSet(viewsets.ModelViewSet):
     )
 
     def _get_review(self):
-        return get_object_or_404(Review, id=self.kwargs['review_id'])
+        review_id = self.kwargs.get('review_id')
+        title_id = self.kwargs.get('title_id')
+        if review_id is None:
+            raise Http404("Параметр 'review_id' не передан в URL")
+        if title_id is None:
+            raise Http404("Параметр 'title_id' не передан в URL")
+        return get_object_or_404(
+            Review,
+            id=review_id,
+            title_id=title_id
+        )
 
     def get_queryset(self):
         review = self._get_review()

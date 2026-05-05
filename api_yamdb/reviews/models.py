@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -12,11 +14,11 @@ User = get_user_model()
 
 class Category(models.Model):
     name = models.CharField(
-        max_length=256,
+        max_length=MAX_NAME_LENGTH,
         verbose_name='Категория'
     )
     slug = models.SlugField(
-        max_length=50,
+        max_length=MAX_SLUG_LENGTH,
         unique=True,
         verbose_name='Категория-слаг'
     )
@@ -66,21 +68,18 @@ class Title(models.Model):
         verbose_name='Жанр'
     )
     name = models.CharField(
-        max_length=MAX_NAME_LENGTH
+        max_length=MAX_NAME_LENGTH,
+        verbose_name='Название'
     )
     year = models.SmallIntegerField(
         blank=True,
         null=True,
-        verbose_name='Год выпуска'
+        verbose_name='Год выпуска',
+        validators=(MaxValueValidator(date.today().year),)
     )
     description = models.TextField(
         blank=True,
         verbose_name='Описание'
-    )
-    rating = models.IntegerField(
-        null=True,
-        blank=True,
-        verbose_name='Рейтинг'
     )
 
     class Meta:
@@ -90,11 +89,6 @@ class Title(models.Model):
 
     def __str__(self):
         return self.name
-
-    def update_rating(self):
-        avg_rating = self.reviews.aggregate(models.Avg('score'))['score__avg']
-        self.rating = round(avg_rating, 1) if avg_rating else None
-        self.save(update_fields=['rating'])
 
 
 class GenreTitle(models.Model):
@@ -111,6 +105,8 @@ class GenreTitle(models.Model):
 
     class Meta:
         ordering = ('genre', 'title')
+        verbose_name = 'связь жанра и тайтла'
+        verbose_name_plural = 'Связи жанров и тайтлов'
         constraints = [
             models.UniqueConstraint(
                 fields=('genre', 'title'),
@@ -136,8 +132,7 @@ class ContentModel(models.Model):
         db_index=True
     )
     text = models.TextField(
-        verbose_name='Текст',
-        blank=True
+        verbose_name='Текст'
     )
 
     class Meta:

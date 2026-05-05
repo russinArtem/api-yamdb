@@ -137,7 +137,7 @@ class TitleViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(genre__slug=genre_slug)
         if name:
             queryset = queryset.filter(name=name)
-        return queryset
+        return queryset.order_by('-rating', '-year', 'name')
 
     def get_serializer_class(self):
         if self.action in {'list', 'retrieve'}:

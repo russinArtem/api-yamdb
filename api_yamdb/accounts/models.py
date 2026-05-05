@@ -1,32 +1,45 @@
-from datetime import datetime, timedelta
-
 from django.db import models
 from django.contrib.auth.models import (
     AbstractUser
 )
 
-CODE_EXPIRATION_LIMIT = timedelta(hours=1)
-CONFIRMATION_CODE_LENGTH = 6
+from .constants import (
+    roles,
+    CONFIRMATION_CODE_LENGTH,
+)
 
-ROLES = (
-    ('user', 'Пользователь'),
-    ('moderator', 'Модератор'),
-    ('admin', 'Администратор'),
+ROLES = tuple(
+    (role.name, role.value) for role in roles
 )
 
 
-class CustomUser(AbstractUser):
+class Account(AbstractUser):
     """Кастомная модель пользователя."""
 
-    email = models.EmailField(unique=True)
-
-    confirmation_code = models.CharField(max_length=6, blank=True)
-    confirmation_code_expiration_dttm = models.DateTimeField(
-        default=(datetime.now() + CODE_EXPIRATION_LIMIT)
+    email = models.EmailField(
+        unique=True,
+        verbose_name='Почта'
     )
-
-    role = models.CharField(default='user', choices=ROLES, max_length=16)
-    bio = models.TextField(blank=True, null=True)
+    confirmation_code = models.CharField(
+        max_length=CONFIRMATION_CODE_LENGTH,
+        blank=True,
+        verbose_name='Код подтверждения'
+    )
+    confirmation_code_expiration_dttm = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name='Код подтверждения активен до:'
+    )
+    role = models.CharField(
+        default=roles.user.value,
+        choices=ROLES,
+        max_length=16,
+        verbose_name='Роль'
+    )
+    bio = models.TextField(
+        blank=True,
+        verbose_name='О себе'
+    )
 
     # Неиспользуемые поля родительской модели
     password = None  # ...
@@ -37,3 +50,8 @@ class CustomUser(AbstractUser):
         ordering = (
             '-date_joined',
         )
+        verbose_name = 'аккаунт'
+        verbose_name_plural = 'Аккаунты'
+
+    def __str__(self):
+        return self.username

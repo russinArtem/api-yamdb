@@ -1,7 +1,7 @@
 from rest_framework import permissions
 
 from accounts.constants import (
-    roles
+    Roles
 )
 
 
@@ -9,7 +9,7 @@ class IsAdminOrSuperuser(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return (
-            request.user.role == roles.admin.value
+            request.user.role == Roles.admin.value
             or request.user.is_superuser
         )
 
@@ -20,7 +20,7 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         return request.user.is_authenticated and (
-            request.user.role == roles.admin.value
+            request.user.role == Roles.admin.value
             or request.user.is_superuser
         )
 
@@ -32,6 +32,6 @@ class IsAuthorOrModeratorOrAdmin(permissions.BasePermission):
             return True
         return (
             instance.author == request.user
-            or request.user.role in (roles.moderator.value, roles.admin.value)
+            or request.user.role in (Roles.moderator.value, Roles.admin.value)
             or request.user.is_superuser
         )

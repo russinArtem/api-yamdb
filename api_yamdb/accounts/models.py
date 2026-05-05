@@ -4,12 +4,12 @@ from django.contrib.auth.models import (
 )
 
 from .constants import (
-    roles,
+    Roles,
     CONFIRMATION_CODE_LENGTH,
 )
 
 ROLES = tuple(
-    (role.name, role.value) for role in roles
+    (role.name, role.value) for role in Roles
 )
 
 
@@ -31,7 +31,7 @@ class Account(AbstractUser):
         verbose_name='Код подтверждения активен до:'
     )
     role = models.CharField(
-        default=roles.user.value,
+        default=Roles.user.value,
         choices=ROLES,
         max_length=16,
         verbose_name='Роль'

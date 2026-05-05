@@ -4,7 +4,7 @@ from datetime import timedelta
 from enum import Enum
 
 
-class roles(Enum):
+class Roles(Enum):
     user = 'user'
     moderator = 'moderator'
     admin = 'admin'

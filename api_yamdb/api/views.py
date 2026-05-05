@@ -1,12 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, permissions, serializers, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.mixins import (
     ListModelMixin,
     CreateModelMixin,
-    DestroyModelMixin
+    DestroyModelMixin,
 )
 
 from .permissions import (
@@ -22,6 +22,7 @@ from .serializers import (
     TitleReadSerializer,
     TitleWriteSerializer,
     UserSerializer,
+    UserMeSerializer,
 )
 from reviews.models import Category, Comment, Genre, Review, Title
 
@@ -29,48 +30,43 @@ from reviews.models import Category, Comment, Genre, Review, Title
 User = get_user_model()
 
 
-class UsersAdminViewSet(
-    viewsets.ModelViewSet
-):
+class UserViewSet(viewsets.ModelViewSet):
+
     lookup_field = 'username'
     http_method_names = ('get', 'post', 'patch', 'delete')
-
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
 
     permission_classes = (
         permissions.IsAuthenticated,
         IsAdminOrSuperuser,
     )
+
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
 
-
-class UserMeView(APIView):
-
-    permission_classes = (
-        permissions.IsAuthenticated,
+    @action(
+        detail=False,
+        methods=('get',),
+        url_path='me',
+        permission_classes=(
+            permissions.IsAuthenticated,
+        )
     )
-    serializer_class = UserSerializer
-
-    def _get_user(self):
-        return self.request.user
-
-    def get(self, request):
+    def me(self, request):
         user = self._get_user()
-        serializer = self.serializer_class(user)
+        serializer = UserSerializer(user)
         return Response(
             data=serializer.data,
             status=status.HTTP_200_OK
         )
 
-    def patch(self, request):
-        # Обрабатываем случай, когда юхер пытается изменить запрещённое поле:
-        if 'role' in request.data:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
+    @me.mapping.post
+    @me.mapping.patch
+    def me_patch(self, request):
         user = self._get_user()
-        serializer = self.serializer_class(
+        serializer = UserMeSerializer(
             user,
             data=request.data,
             partial=True
@@ -81,6 +77,9 @@ class UserMeView(APIView):
             data=serializer.data,
             status=status.HTTP_200_OK
         )
+
+    def _get_user(self):
+        return self.request.user
 
 
 class CategoryViewSet(

@@ -148,3 +148,17 @@ python manage.py runserver
   "score": 8
 }
 ```
+
+---
+
+## Авторы - команда разработчиков
+
+**Артем Руссин** - участник команды
+
+GitHub: [russinArtem](https://github.com/russinArtem/)
+
+Email: [russinartem@yandex.ru](mailto:russinartem@yandex.ru)
+
+## Лицензия
+
+Проект выполнен в рамках учебного курса [Яндекс.Практикум](https://practicum.yandex.ru/).
